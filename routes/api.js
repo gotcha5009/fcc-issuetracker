@@ -6,9 +6,28 @@ module.exports = function (app, client) {
 
   app.route('/api/issues/:project')
 
-    .get(function (req, res) {
-      let project = req.params.project;
-
+    .get(async function (req, res) {
+      try {
+        let project = req.params.project;
+        const collection = client.db('database').collection(project);
+        console.log(req.query);
+        if (req.query.open) {
+          if (req.query.open === "true") {
+            req.query.open = true;
+          }
+          if (req.query.open === "false") {
+            req.query.open = false;
+          }
+        }
+        if (req.query._id) {
+          req.query._id = ObjectId(req.query._id) || req.query._id;
+        }
+        const docs = await collection.find(req.query).toArray();
+        res.json(docs);
+      } catch (err) {
+        res.send();
+        throw err;
+      }
     })
 
     .post(async function (req, res) {
@@ -18,9 +37,9 @@ module.exports = function (app, client) {
             error: "required field(s) missing"
           });
         } else {
-          let project = req.params.project;
-          let collection = client.db('database').collection(project);
-          let issue = {
+          const project = req.params.project;
+          const collection = client.db('database').collection(project);
+          const issue = {
             assigned_to: req.body.assigned_to || "",
             status_text: req.body.status_text || "",
             open: true,
@@ -48,28 +67,32 @@ module.exports = function (app, client) {
         } else if (!req.body.issue_title && !req.body.issue_text && !req.body.created_by && !req.body.assigned_to & !req.body.status_text) {
           res.json({ error: 'no update field(s) sent', '_id': req.body._id });
         } else {
-          let project = req.params.project;
-          let collection = client.db('database').collection(project);
-          let doc = await collection.findOne({ _id: ObjectId(req.body._id) });
-          console.log(doc);
-          if (doc === null) {
+          const project = req.params.project;
+          const collection = client.db('database').collection(project);
+          const result = await collection.updateOne(
+            { _id: ObjectId(req.body._id) },
+            {
+              $set: {
+                issue_title: req.body.issue_title,
+                issue_text: req.body.issue_text,
+                created_by: req.body.created_by,
+                assigned_to: req.body.assigned_to,
+                status_text: req.body.status_text,
+                open: req.body.open === undefined ? undefined : false,
+                updated_on: new Date().toISOString()
+              }
+            },
+            {
+              upsert: false,
+              ignoreUndefined: true
+            }
+          );
+          console.log(result.modifiedCount);
+          if (result.modifiedCount === 0) {
             res.json({ error: 'could not update', '_id': req.body._id });
           } else {
-            doc.issue_title = req.body.issue_title || doc.issue_title;
-            doc.issue_text = req.body.issue_text || doc.issue_text;
-            doc.created_by = req.body.created_by || doc.created_by;
-            doc.assigned_to = req.body.assigned_to || doc.assigned_to;
-            doc.status_text = req.body.status_text || doc.status_text;
-            doc.updated_on = new Date().toISOString();
-            console.log(doc);
-            collection.save(doc, (err, result) => {
-              if (err) {
-                throw err;
-              } else {
-                res.json({ result: 'successfully updated', '_id': req.body._id });
-              }
-            })
-          };
+            res.json({ result: 'successfully updated', '_id': req.body._id });
+          }
         }
       } catch (err) {
         res.json({ error: 'could not update', '_id': req.body._id });
@@ -79,8 +102,26 @@ module.exports = function (app, client) {
 
     })
 
-    .delete(function (req, res) {
-      let project = req.params.project;
+    .delete(async function (req, res) {
+      try {
+        if (!req.body._id) {
+          res.json({ error: 'missing _id' });
+        } else {
+          const project = req.params.project;
+          const collection = client.db('database').collection(project);
+          const result = await collection.deleteOne({ _id: ObjectId(req.body._id) });
+          console.log(result.deletedCount);
+          if (result.deletedCount === 0) {
+            res.json({ error: 'could not delete', '_id': req.body._id });
+          } else {
+            res.json({ result: 'successfully deleted', '_id': req.body._id });
+          }
+        }
+      } catch (err) {
+        res.json({ error: 'could not delete', '_id': req.body._id });
+        throw err;
+      }
+
 
     });
 
