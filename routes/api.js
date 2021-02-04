@@ -10,7 +10,7 @@ module.exports = function (app, client) {
       try {
         let project = req.params.project;
         const collection = client.db('database').collection(project);
-        console.log(req.query);
+        // console.log(req.query);
         if (req.query.open) {
           if (req.query.open === "true") {
             req.query.open = true;
@@ -51,7 +51,7 @@ module.exports = function (app, client) {
             updated_on: new Date().toISOString()
           };
           const result = await collection.insertOne(issue);
-          console.log(result.ops[0])
+          //console.log(result.ops[0])
           res.send(result.ops[0]);
         }
       } catch (err) {
@@ -87,7 +87,7 @@ module.exports = function (app, client) {
               ignoreUndefined: true
             }
           );
-          console.log(result.modifiedCount);
+          // console.log(result.modifiedCount);
           if (result.modifiedCount === 0) {
             res.json({ error: 'could not update', '_id': req.body._id });
           } else {
@@ -96,7 +96,6 @@ module.exports = function (app, client) {
         }
       } catch (err) {
         res.json({ error: 'could not update', '_id': req.body._id });
-        throw err;
       }
 
 
@@ -110,7 +109,7 @@ module.exports = function (app, client) {
           const project = req.params.project;
           const collection = client.db('database').collection(project);
           const result = await collection.deleteOne({ _id: ObjectId(req.body._id) });
-          console.log(result.deletedCount);
+          // console.log(result.deletedCount);
           if (result.deletedCount === 0) {
             res.json({ error: 'could not delete', '_id': req.body._id });
           } else {
@@ -119,7 +118,6 @@ module.exports = function (app, client) {
         }
       } catch (err) {
         res.json({ error: 'could not delete', '_id': req.body._id });
-        throw err;
       }
 
 
