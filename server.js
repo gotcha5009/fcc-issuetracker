@@ -35,7 +35,7 @@ app.route('/')
   });
 
 //database client
-const client = new MongoClient(process.env.db, { useNewUrlParser: true, useUnifiedTopology: true });
+const client = new MongoClient(process.env.DB, { useNewUrlParser: true, useUnifiedTopology: true });
 
 //For FCC testing purposes
 fccTestingRoutes(app);
